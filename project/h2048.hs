@@ -104,11 +104,13 @@ gameLoop :: Grid -> IO ()
 gameLoop grid
     | isMoveLeft grid = do
         printGrid grid
-        do new_grid <- newGrid grid
-           if grid /= new_grid
-            then do new <- addTile new_grid
-                    gameLoop new
-            else gameLoop grid
+        if check2048 grid
+        then putStrLn "You won!"
+        else do new_grid <- newGrid grid
+                if grid /= new_grid
+                then do new <- addTile new_grid
+                        gameLoop new
+                else gameLoop grid
     | otherwise = do
         printGrid grid
         putStrLn "Game over"
