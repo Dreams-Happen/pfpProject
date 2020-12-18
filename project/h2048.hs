@@ -57,6 +57,11 @@ isMoveLeft grid = sum allChoices > 0
     where allChoices = map (length . getZeroes . flip move grid) directions
           directions = [Left, Right, Up, Down]
 
+getChildren :: Grid -> [Grid]
+getChildren grid = filter (\x -> x /= grid) [move d grid | d <- directions]
+    where directions = [Left, Right, Up, Down]
+
+
 printGrid :: Grid -> IO ()
 printGrid grid = do
     --putStr "\ESC[2J\ESC[2J\n" -- clears the screen
@@ -99,6 +104,12 @@ newGrid grid = do
     m <- captureMove
     let new_grid = move m grid
     return new_grid
+
+sumOfTiles :: Grid -> Int
+sumOfTiles grid = sum $ map sum grid
+
+utility :: Grid -> Int
+utility = sumOfTiles
 
 gameLoop :: Grid -> IO ()
 gameLoop grid
