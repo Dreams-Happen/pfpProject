@@ -108,17 +108,8 @@ newGrid grid = do
 sumOfTiles :: Grid -> Int
 sumOfTiles grid = sum $ map sum grid
 
-weightMatrix grid = sumOfTiles $ zipWith (zipWith (*)) matrix grid
-    where matrix = [[1073741824, 268435456, 67108864, 16777216],[65536,262144,1048576,4194304],[16384,4096,1024,256],[1,4,16,64]]
-
-
-availableCells grid = sum $ map zeros grid
-    where zeros l = length $ filter (\x -> x == 0) l
-
 utility :: Grid -> Int
 utility grid = weightMatrix grid + 1024 * (availableCells grid)
-
-
 
 getAIMove :: Grid -> Move 
 getAIMove grid = backTrackMove grid (getChildren grid) (optimalMove grid 0 [minimizer (fst possibleGrid) (fst possibleGrid) 1 | possibleGrid <- getChildren grid])
