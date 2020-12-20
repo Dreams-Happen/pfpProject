@@ -116,7 +116,7 @@ availableCells grid = sum $ map zeros grid
     where zeros l = length $ filter (\x -> x == 0) l
 
 utility :: Grid -> Int
-utility = sumOfTiles
+utility grid = weightMatrix grid + 1024 * (availableCells grid)
 
 
 
