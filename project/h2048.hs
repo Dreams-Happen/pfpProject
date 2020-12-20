@@ -57,8 +57,8 @@ isMoveLeft grid = sum allChoices > 0
     where allChoices = map (length . getZeroes . flip move grid) directions
           directions = [Left, Right, Up, Down]
 
-getChildren :: Grid -> [Grid]
-getChildren grid = filter (\x -> x /= grid) [move d grid | d <- directions]
+getChildren :: Grid -> [(Grid,Move)]
+getChildren grid = filter (\x -> x /= grid) [(move d grid, d) | d <- directions]
     where directions = [Left, Right, Up, Down]
 
 
@@ -110,6 +110,47 @@ sumOfTiles grid = sum $ map sum grid
 
 utility :: Grid -> Int
 utility = sumOfTiles
+
+getAIMove :: Grid -> Move 
+getAIMove grid = optimalMove grid 0 [minimizer (fst possibleGrid) (fst possibleGrid) 1 | possibleGrid <- getChildren grid]
+
+minimizer :: Grid -> Grid -> Int -> (Grid, Grid, Int)
+minimizer grid originalGrid depth 
+            | depth > 4 || length possibleMoves == 0 = (grid, originalGrid, utility grid)
+            | otherwise = minimizerHelper possibleMoves grid originalGrid 9999 depth
+              where possibleMoves = moves2 ++ moves4
+                    moves2 = [fst a | a <- random2]
+                    moves4 = [fst a | a <- random4]
+                    random2 = randomGrid grid 2
+                    random4 = randomGrid grid 4
+
+minimizerHelper :: [Grid] -> Grid -> Grid -> Int -> Int -> (Grid, Grid, Int)
+minimizerHelper [] grid originalGrid minimumUtility _ = (grid, originalGrid, minimumUtility)
+minimizerHelper (x:xs) grid originalGrid minimumUtility depth 
+        | currentUtility < minimumUtility = minimizerHelper xs x originalGrid currentUtility depth
+        | otherwise = minimizerHelper xs grid originalGrid minimumUtility depth 
+            where currentUtility = snd (maximizer x (depth + 1))
+    
+maximizer :: Grid -> Int -> (Grid, Int) 
+maximizer grid depth 
+    | depth > 4 = (grid, utility grid)
+    | length possibleMoves == 0 = (grid, 0)
+    | otherwise = optimalMove grid 0 [minimizer (fst possibleGrid) (fst possibleGrid) | possibleGrid <- getChildren grid] 
+
+optimalMove :: Grid -> Int -> [(Grid, Grid, Int)] -> (Grid, Int)
+optimalMove grid maximumUtility [] = (grid, maximumUtility) 
+optimalMove grid maximumUtility ((_,currentGrid,utility):xs)
+        | utility > maximumUtility = optimalMove currentGrid utility xs 
+        | otherwise = optimalMove grid maximumUtility xs 
+
+randomGrid :: Grid -> Int -> Grid 
+randomGrid grid numberToInsert = setSquare grid (head (getZeroes grid)) numberToInsert 
+
+backTrackMove :: [(Grid,Move)] -> (Grid, Int) -> Move
+backTrackMove listOfPossibilities optimalGridResult 
+        | fst (head listOfPossibilities) == fst optimalGridResult = snd (head listOfPossibilities)
+        | otherwise = backTrackMove (tail listOfPossibilities) optimalGridResult 
+
 
 gameLoop :: Grid -> IO ()
 gameLoop grid
