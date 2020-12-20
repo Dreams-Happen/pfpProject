@@ -112,15 +112,15 @@ utility :: Grid -> Int
 utility = sumOfTiles
 
 getAIMove :: Grid -> Move 
-getAIMove grid = backTrackMove (getChildren grid) (optimalMove grid 0 [minimizer (fst possibleGrid) (fst possibleGrid) 1 | possibleGrid <- getChildren grid])
+getAIMove grid = backTrackMove grid (getChildren grid) (optimalMove grid 0 [minimizer (fst possibleGrid) (fst possibleGrid) 1 | possibleGrid <- getChildren grid])
 
 minimizer :: Grid -> Grid -> Int -> (Grid, Grid, Int)
 minimizer grid originalGrid depth 
             | depth > 4 || length possibleMoves == 0 = (grid, originalGrid, utility grid)
             | otherwise = minimizerHelper possibleMoves grid originalGrid 9999 depth
               where possibleMoves = moves2 ++ moves4
-                    moves2 = [random2]
-                    moves4 = [random4]
+                    moves2 = [fst x | x <- random2]
+                    moves4 = [fst x | x <- random4]
                     random2 = randomGrid grid 2
                     random4 = randomGrid grid 4
 
@@ -143,13 +143,22 @@ optimalMove grid maximumUtility ((_,currentGrid,utility):xs)
         | utility > maximumUtility = optimalMove currentGrid utility xs 
         | otherwise = optimalMove grid maximumUtility xs 
 
-randomGrid :: Grid -> Int -> Grid 
-randomGrid grid numberToInsert = setSquare grid (head (getZeroes grid)) numberToInsert 
 
-backTrackMove :: [(Grid,Move)] -> (Grid, Int) -> Move
-backTrackMove listOfPossibilities optimalGridResult 
+backTrackMove :: Grid -> [(Grid,Move)] -> (Grid, Int) -> Move
+backTrackMove grid [] optimalGridResult = randomMove grid 
+backTrackMove grid listOfPossibilities optimalGridResult 
         | fst (head listOfPossibilities) == fst optimalGridResult = snd (head listOfPossibilities)
-        | otherwise = backTrackMove (tail listOfPossibilities) optimalGridResult 
+        | otherwise = backTrackMove grid (tail listOfPossibilities) optimalGridResult 
+
+insertTile :: (Int, Int) -> Int -> Grid -> Grid
+insertTile (rowIndex, columnIndex) value = updateIndex (updateIndex (const value) columnIndex) rowIndex
+ where updateIndex fn i list = take i list ++ fn (head $ drop i list) : tail (drop i list)
+
+randomGrid :: Grid -> Int -> [(Grid, Int)]
+randomGrid grid insertedValue = sortOn (\(_,d) -> -d) [(insertTile (x,y) insertedValue grid, utility grid) | (x,y) <- getZeroes grid]
+
+randomMove :: Grid -> Move 
+randomMove grid = snd (head (getChildren grid))
 
 
 gameLoop :: Grid -> IO ()
