@@ -125,7 +125,7 @@ getAIMove grid = backTrackMove grid (getChildren grid) (optimalMove grid 0 [mini
 
 minimizer :: Grid -> Grid -> Int -> (Grid, Grid, Int)
 minimizer grid originalGrid depth 
-            | depth > 4 || length possibleMoves == 0 = (grid, originalGrid, utility grid)
+            | depth > 6 || length possibleMoves == 0 = (grid, originalGrid, utility grid)
             | otherwise = minimizerHelper possibleMoves grid originalGrid 9999 depth
               where possibleMoves = moves2 ++ moves4
                     moves2 = [fst x | x <- random2]
@@ -142,7 +142,7 @@ minimizerHelper (x:xs) grid originalGrid minimumUtility depth
     
 maximizer :: Grid -> Int -> (Grid, Int) 
 maximizer grid depth 
-    | depth > 4 = (grid, utility grid)
+    | depth > 6 = (grid, utility grid)
     | length (getChildren grid) == 0 = (grid, 0)
     | otherwise = optimalMove grid 0 [minimizer (fst possibleGrid) (fst possibleGrid) (depth+1) | possibleGrid <- getChildren grid] 
 
