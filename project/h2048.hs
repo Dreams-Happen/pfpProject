@@ -58,7 +58,7 @@ isMoveLeft grid = sum allChoices > 0
           directions = [Left, Right, Up, Down]
 
 getChildren :: Grid -> [(Grid,Move)]
-getChildren grid = filter (\x -> x /= grid) [(move d grid, d) | d <- directions]
+getChildren grid = filter (\x -> fst x /= grid) [(move d grid, d) | d <- directions]
     where directions = [Left, Right, Up, Down]
 
 
@@ -101,7 +101,7 @@ choose xs = do
 
 newGrid :: Grid -> IO Grid
 newGrid grid = do
-    m <- captureMove
+    let m = getAIMove grid
     let new_grid = move m grid
     return new_grid
 
@@ -112,15 +112,15 @@ utility :: Grid -> Int
 utility = sumOfTiles
 
 getAIMove :: Grid -> Move 
-getAIMove grid = optimalMove grid 0 [minimizer (fst possibleGrid) (fst possibleGrid) 1 | possibleGrid <- getChildren grid]
+getAIMove grid = backTrackMove (getChildren grid) (optimalMove grid 0 [minimizer (fst possibleGrid) (fst possibleGrid) 1 | possibleGrid <- getChildren grid])
 
 minimizer :: Grid -> Grid -> Int -> (Grid, Grid, Int)
 minimizer grid originalGrid depth 
             | depth > 4 || length possibleMoves == 0 = (grid, originalGrid, utility grid)
             | otherwise = minimizerHelper possibleMoves grid originalGrid 9999 depth
               where possibleMoves = moves2 ++ moves4
-                    moves2 = [fst a | a <- random2]
-                    moves4 = [fst a | a <- random4]
+                    moves2 = [random2]
+                    moves4 = [random4]
                     random2 = randomGrid grid 2
                     random4 = randomGrid grid 4
 
@@ -134,8 +134,8 @@ minimizerHelper (x:xs) grid originalGrid minimumUtility depth
 maximizer :: Grid -> Int -> (Grid, Int) 
 maximizer grid depth 
     | depth > 4 = (grid, utility grid)
-    | length possibleMoves == 0 = (grid, 0)
-    | otherwise = optimalMove grid 0 [minimizer (fst possibleGrid) (fst possibleGrid) | possibleGrid <- getChildren grid] 
+    | length (getChildren grid) == 0 = (grid, 0)
+    | otherwise = optimalMove grid 0 [minimizer (fst possibleGrid) (fst possibleGrid) (depth+1) | possibleGrid <- getChildren grid] 
 
 optimalMove :: Grid -> Int -> [(Grid, Grid, Int)] -> (Grid, Int)
 optimalMove grid maximumUtility [] = (grid, maximumUtility) 
