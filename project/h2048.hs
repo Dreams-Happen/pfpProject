@@ -169,6 +169,17 @@ randomGrid grid insertedValue = sortOn (\(_,d) -> -d) [(insertTile (x,y) inserte
 randomMove :: Grid -> Move 
 randomMove grid = snd (head (getChildren grid))
 
+maxTile :: Grid -> Int
+maxTile b = maximum $ map maximum b
+
+eval :: Grid -> Int
+eval b
+ | (maxTile b) <= 512 = sum $ map (\(x,y) -> sum $ zipWith (*) x y) c
+ | otherwise = sum $ map (\(x,y) -> sum $ zipWith (*) x y) d
+ where
+ c = zip [[21,8,3,3],[9,5,2],[4,3]] b
+ d = zip [[19,9,5,3],[8,4,2],[3]] b
+
 
 gameLoop :: Grid -> IO ()
 gameLoop grid
