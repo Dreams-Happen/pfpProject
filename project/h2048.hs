@@ -108,25 +108,22 @@ newGrid grid = do
 sumOfTiles :: Grid -> Int
 sumOfTiles grid = sum $ map sum grid
 
+-- utility :: Grid -> Int
+-- utility grid = weightMatrix grid + 1024 * (availableCells grid)
 
 weightMatrix grid = sumOfTiles $ zipWith (zipWith (*)) matrix grid
     where matrix = [[1073741824, 268435456, 67108864, 16777216],[65536,262144,1048576,4194304],[16384,4096,1024,256],[1,4,16,64]]
 
-
 availableCells grid = sum $ map zeros grid
     where zeros l = length $ filter (\x -> x == 0) l
 
-
-utility :: Grid -> Int
-utility grid = weightMatrix grid + 1024 * (availableCells grid)
-
 getAIMove :: Grid -> Move 
-getAIMove grid = backTrackMove grid (getChildren grid) (optimalMove grid 0 [minimizer (fst possibleGrid) (fst possibleGrid) 1 | possibleGrid <- getChildren grid])
+getAIMove grid = backTrackMove grid (getChildren grid) (optimalMove grid (-99999) [minimizer (fst possibleGrid) (fst possibleGrid) 1 | possibleGrid <- getChildren grid])
 
 minimizer :: Grid -> Grid -> Int -> (Grid, Grid, Int)
 minimizer grid originalGrid depth 
-            | depth > 6 || length possibleMoves == 0 = (grid, originalGrid, utility grid)
-            | otherwise = minimizerHelper possibleMoves grid originalGrid 9999 depth
+            | depth > 4 || length possibleMoves == 0 = (grid, originalGrid, utility grid)
+            | otherwise = minimizerHelper possibleMoves grid originalGrid 99999 depth
               where possibleMoves = moves2 ++ moves4
                     moves2 = [fst x | x <- random2]
                     moves4 = [fst x | x <- random4]
@@ -142,9 +139,9 @@ minimizerHelper (x:xs) grid originalGrid minimumUtility depth
     
 maximizer :: Grid -> Int -> (Grid, Int) 
 maximizer grid depth 
-    | depth > 6 = (grid, utility grid)
+    | depth > 4 = (grid, utility grid)
     | length (getChildren grid) == 0 = (grid, 0)
-    | otherwise = optimalMove grid 0 [minimizer (fst possibleGrid) (fst possibleGrid) (depth+1) | possibleGrid <- getChildren grid] 
+    | otherwise = optimalMove grid (-99999) [minimizer (fst possibleGrid) (fst possibleGrid) (depth+1) | possibleGrid <- getChildren grid] 
 
 optimalMove :: Grid -> Int -> [(Grid, Grid, Int)] -> (Grid, Int)
 optimalMove grid maximumUtility [] = (grid, maximumUtility) 
@@ -164,21 +161,46 @@ insertTile (rowIndex, columnIndex) value = updateIndex (updateIndex (const value
  where updateIndex fn i list = take i list ++ fn (head $ drop i list) : tail (drop i list)
 
 randomGrid :: Grid -> Int -> [(Grid, Int)]
-randomGrid grid insertedValue = sortOn (\(_,d) -> -d) [(insertTile (x,y) insertedValue grid, utility grid) | (x,y) <- getZeroes grid]
+randomGrid grid insertedValue = sortOn (\(_,monotonicity) -> -monotonicity) [(insertTile (x,y) insertedValue grid, risk grid x y) | (x,y) <- getZeroes grid]
 
 randomMove :: Grid -> Move 
 randomMove grid = snd (head (getChildren grid))
 
-maxTile :: Grid -> Int
-maxTile b = maximum $ map maximum b
+maximumCoordinate :: Grid -> Int
+maximumCoordinate grid = maximum $ map maximum grid
 
-eval :: Grid -> Int
-eval b
- | (maxTile b) <= 512 = sum $ map (\(x,y) -> sum $ zipWith (*) x y) c
- | otherwise = sum $ map (\(x,y) -> sum $ zipWith (*) x y) d
+utility :: Grid -> Int
+utility grid
+ | (maximumCoordinate grid) <= 512 = sum $ map (\(x,y) -> sum $ zipWith (*) x y) a
+ | otherwise = sum $ map (\(x,y) -> sum $ zipWith (*) x y) b
  where
- c = zip [[21,8,3,3],[9,5,2],[4,3]] b
- d = zip [[19,9,5,3],[8,4,2],[3]] b
+ a = zip [[30,27,24,21], [13,15,17],[7,5]] grid
+ b = zip [[30,27,24,21], [13,15,17],[5]] grid
+
+
+risk :: Grid -> Int -> Int -> Int
+risk grid x y = (riskUp grid x y) + (riskDown grid x y) + (riskLeft grid x y) + (riskRight grid x y)
+
+riskUp :: Grid -> Int -> Int -> Int
+riskUp grid x y
+ | x > 0 = abs $ ((grid !! x) !! y) - ((grid !! (x-1)) !! y)
+ | otherwise = 0
+
+riskDown :: Grid -> Int -> Int -> Int
+riskDown grid x y
+ | x < 3 = abs $ ((grid !! x) !! y) - ((grid !! (x+1)) !! y)
+ | otherwise = 0
+
+riskLeft :: Grid -> Int -> Int -> Int
+riskLeft grid x y
+ | y > 0 = abs $ ((grid !! x) !! y) - ((grid !! x) !! (y-1))
+ | otherwise = 0
+
+
+riskRight :: Grid -> Int -> Int -> Int
+riskRight grid x y
+ | y < 3 = abs $ ((grid !! x) !! y) - ((grid !! x) !! (y+1))
+ | otherwise = 0
 
 
 gameLoop :: Grid -> IO ()
