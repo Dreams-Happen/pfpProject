@@ -161,7 +161,7 @@ insertTile (rowIndex, columnIndex) value = updateIndex (updateIndex (const value
  where updateIndex fn i list = take i list ++ fn (head $ drop i list) : tail (drop i list)
 
 randomGrid :: Grid -> Int -> [(Grid, Int)]
-randomGrid grid insertedValue = sortOn (\(_,d) -> -d) [(insertTile (x,y) insertedValue grid, risk grid x y) | (x,y) <- getZeroes grid]
+randomGrid grid insertedValue = sortOn (\(_,monotonicity) -> -monotonicity) [(insertTile (x,y) insertedValue grid, risk grid x y) | (x,y) <- getZeroes grid]
 
 randomMove :: Grid -> Move 
 randomMove grid = snd (head (getChildren grid))
