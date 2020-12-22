@@ -64,7 +64,6 @@ getChildren grid = filter (\x -> x /= grid) [move d grid | d <- directions]
 
 printGrid :: Grid -> IO ()
 printGrid grid = do
-    --putStr "\ESC[2J\ESC[2J\n" -- clears the screen
     putStrLn ""
     mapM_ (putStrLn . showRow) grid
 
@@ -149,7 +148,8 @@ utility grid = weightMatrix grid + (100 * availableCells grid) + (15 * monotonic
 
 maximize grid a b maxDepth
   | maxDepth == 0 || not (isMoveLeft grid) = (grid, utility grid)
-  | otherwise = maxHelper (getChildren grid) grid a b (-999999999999) maxDepth
+  | otherwise = maxHelper Children grid a b (-999999999999) maxDepth
+    where children = if length (getNoRight grid) > 0 then getNoRight grid else getChildren grid
 
 maxHelper [] maxChild a b maxUtility maxDepth = (maxChild, maxUtility)
 maxHelper (c:children) maxChild a b maxUtility maxDepth
@@ -239,24 +239,25 @@ eval b
  d = zip [[19,9,5,3],[8,4,2],[3]] b
 
 
-gameLoop :: Grid -> IO ()
-gameLoop grid
+gameLoop :: Grid -> Int -> IO ()
+gameLoop grid moves
     | isMoveLeft grid = do
         printGrid grid
         if check2048 grid
         then putStrLn "You won!"
-        else do --new_grid <- newGrid grid
+        else do 
                 let (newGrid, _) = maximize grid (-999999999999) 999999999999 4
                 if grid /= newGrid
                 then do new <- addTile newGrid
-                        gameLoop new
-                else gameLoop grid
+                        gameLoop new (moves + 1)
+                else gameLoop grid moves
     | otherwise = do
         printGrid grid
         putStrLn "Game over"
+        putStrLn $ "number of moves: " ++ show moves
 
 main :: IO ()
 main = do
     hSetBuffering stdin NoBuffering
     grid <- start
-    gameLoop grid
+    gameLoop grid 0
