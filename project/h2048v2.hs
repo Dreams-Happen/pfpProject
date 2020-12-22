@@ -110,15 +110,41 @@ sumOfTiles grid = toInteger $ sum $ map sum grid
 
 
 weightMatrix grid = sumOfTiles $ zipWith (zipWith (*)) matrix grid
-    where matrix = [[1073741824, 268435456, 67108864, 16777216],[65536,262144,1048576,4194304],[16384,4096,1024,256],[1,4,16,64]]
+    --where matrix = [[1073741824, 268435456, 67108864, 16777216],[65536,262144,1048576,4194304],[16384,4096,1024,256],[1,4,16,64]]   
+    --where matrix = [[1073741824, 268435456, 67108864, 16777216],[4194304,1048576,262144,65536],[16384,4096,1024,256],[64,16,4,1]]
+    --where matrix = [[7,6,5,4],[6,5,4,3],[5,4,3,2],[4,3,2,1]] 
+    where matrix = if maxTile grid <= 512 then [[21,8,3,3],[9,5,2],[4,3]] else  [[19,9,5,3],[8,4,2],[3]]
+    --where matrix = [[26000,,22,20],[12,14,16,18],[10,8,6,4],[1,2,3,4]]
+
+monotonicity [] _ = 0
+monotonicity (x:xs) currentValue = monotonicityHelper x currentValue + monotonicity xs currentValue
+
+monotonicityHelper [] _ = 0
+monotonicityHelper (x:xs) currentValue 
+                | x < currentValue = 1 + monotonicityHelper xs x 
+                | otherwise = monotonicityHelper xs x 
+
+
+smoothness [] = 0
+smoothness (x:xs) = smoothnessHelper x + smoothness xs 
+
+smoothnessHelper [] = 0
+smoothnessHelper (a:b:c:d:xs) = fromIntegral $ ((abs (a - b)) + (abs (b - c)) + (abs (c - d))) * 5
+                
+
 
 availableCells :: Grid -> Integer
 availableCells grid = toInteger $ sum $ map zeros grid
     where zeros l = length $ filter (\x -> x == 0) l
 
+weWon grid 
+    | maxTile grid == 2048 = 999999
+    | otherwise = 0
+
 
 utility :: Grid -> Integer
-utility grid = weightMatrix grid + 1024 * (availableCells grid) 
+utility grid = weightMatrix grid + (100 * availableCells grid) + (15 * monotonicity grid 9999) + (15 * monotonicity (transpose grid) 9999) - (smoothness grid) - (smoothness (transpose grid)) + weWon grid
+--utility grid = fromIntegral $ (3 * monotonicity grid 9999) + (3 * monotonicity (transpose grid) 9999) - (smoothness grid) - (smoothness (transpose grid)) + (maxTile grid) + (fromIntegral $ 3 * availableCells grid) + (fromIntegral $ sumOfTiles grid)
 
 
 maximize grid a b maxDepth
@@ -220,7 +246,7 @@ gameLoop grid
         if check2048 grid
         then putStrLn "You won!"
         else do --new_grid <- newGrid grid
-                let (newGrid, _) = maximize grid (-999999999999) 999999999999 6
+                let (newGrid, _) = maximize grid (-999999999999) 999999999999 4
                 if grid /= newGrid
                 then do new <- addTile newGrid
                         gameLoop new
