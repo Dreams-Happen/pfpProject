@@ -61,6 +61,9 @@ getChildren :: Grid -> [Grid]
 getChildren grid = filter (\x -> x /= grid) [move d grid | d <- directions]
     where directions = [Left, Right, Up, Down]
 
+getNoRight :: Grid -> [Grid]
+getNoRight grid = filter (\x -> x /= grid) [move d grid | d <- directions]
+    where directions = [Left, Up, Down]
 
 printGrid :: Grid -> IO ()
 printGrid grid = do
