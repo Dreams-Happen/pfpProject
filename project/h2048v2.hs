@@ -151,7 +151,7 @@ utility grid = weightMatrix grid + (100 * availableCells grid) + (15 * monotonic
 
 maximize grid a b maxDepth
   | maxDepth == 0 || not (isMoveLeft grid) = (grid, utility grid)
-  | otherwise = maxHelper Children grid a b (-999999999999) maxDepth
+  | otherwise = maxHelper children grid a b (-999999999999) maxDepth
     where children = if length (getNoRight grid) > 0 then getNoRight grid else getChildren grid
 
 maxHelper [] maxChild a b maxUtility maxDepth = (maxChild, maxUtility)
